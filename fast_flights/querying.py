@@ -1,10 +1,10 @@
 from base64 import b64encode
-from datetime import datetime as Datetime
 from dataclasses import dataclass
+from datetime import datetime as Datetime
 from typing import Literal, Optional, Union
 
+from .pb.flights_pb2 import Airport, FlightData, Info, Passenger, Seat, SortPreference, SortType, TfuData, Trip
 from .types import Currency, Language, PriceType, SeatType, TripType
-from .pb.flights_pb2 import Airport, Info, Passenger, Seat, FlightData, Trip
 
 
 @dataclass
@@ -36,6 +36,24 @@ class Query:
         """Convert this query to a string."""
         return b64encode(self.to_bytes()).decode("utf-8")
 
+    def _get_tfu_param(self) -> str:
+        """Get the tfu parameter for price sorting."""
+        if self.price_type == "best":
+            # Best: field1=2, sort_type=1 (BEST), field5=20
+            sort_pref = SortPreference(field1=2, sort_type=SortType.BEST, field5=20)
+        else:  # cheapest
+            # Cheapest: field1=2, sort_type=2 (CHEAPEST), field5=21
+            sort_pref = SortPreference(field1=2, sort_type=SortType.CHEAPEST, field5=21)
+
+        tfu_data = TfuData(preference=sort_pref, field4=b"")
+        # Serialize and manually append field4 empty bytes (0x22 0x00)
+        # Protobuf normally skips empty fields, but Google includes this
+        serialized = tfu_data.SerializeToString()
+        # Append field 4 (wire type 2) with length 0: 0x22 (field 4, type 2) + 0x00 (length 0)
+        serialized += bytes([0x22, 0x00])
+        # Remove padding to match Google's format
+        return b64encode(serialized).decode("utf-8").rstrip("=")
+
     def url(self) -> str:
         """Get the URL for this query.
 
@@ -50,18 +68,19 @@ class Query:
             + self.currency
         )
 
-        if self.price_type == "cheapest":
-            url += "&tfu=EgoIABAAGAAgAigD&hl"
+        # Always include tfu parameter for price sorting
+        url += "&tfu=" + self._get_tfu_param()
 
         return url
 
     def params(self) -> dict[str, str]:
         """Create `params` in dictionary form."""
-        params = {"tfs": self.to_str(), "hl": self.language, "curr": self.currency}
-
-        if self.price_type == "cheapest":
-            params["tfu"] = "EgoIABAAGAAgAigD&hl"
-
+        params = {
+            "tfs": self.to_str(),
+            "hl": self.language,
+            "curr": self.currency,
+            "tfu": self._get_tfu_param(),  # Always include tfu parameter
+        }
         return params
 
     def __repr__(self) -> str:
@@ -106,12 +125,8 @@ class Passengers:
         infants_in_seat: int = 0,
         infants_on_lap: int = 0,
     ):
-        assert (
-            sum((adults, children, infants_in_seat, infants_on_lap)) <= 9
-        ), "Too many passengers (> 9)"
-        assert (
-            infants_on_lap <= adults
-        ), "Must have at least one adult per infant on lap"
+        assert sum((adults, children, infants_in_seat, infants_on_lap)) <= 9, "Too many passengers (> 9)"
+        assert infants_on_lap <= adults, "Must have at least one adult per infant on lap"
 
         self.adults = adults
         self.children = children

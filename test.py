@@ -1,5 +1,6 @@
-from fast_flights import FlightQuery, Passengers, create_query, get_flights
 from pprint import pprint
+
+from fast_flights import FlightQuery, Passengers, create_query, get_flights
 
 query = create_query(
     flights=[
@@ -12,7 +13,7 @@ query = create_query(
     seat="economy",
     trip="one-way",
     passengers=Passengers(adults=1),
-    language="zh-TW",
+    language="en-US",
     price_type="best",
 )
 res = get_flights(query)

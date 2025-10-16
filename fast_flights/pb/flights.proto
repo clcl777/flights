@@ -51,3 +51,21 @@ message ItinerarySummary {
   string flights = 2;
   Price price = 3;
 }
+
+// Message for the tfu parameter (price sorting preference)
+enum SortType {
+  UNKNOWN_SORT = 0;
+  BEST = 1;
+  CHEAPEST = 2;
+}
+
+message SortPreference {
+  int32 field1 = 1;  // Always 2
+  SortType sort_type = 4;
+  int32 field5 = 5;  // 20 for Best, 21 for Cheapest
+}
+
+message TfuData {
+  SortPreference preference = 2;
+  bytes field4 = 4;  // Empty bytes
+}
