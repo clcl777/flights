@@ -1,0 +1,48 @@
+---
+description: Protocol Buffer development workflow and patterns
+---
+
+# Protocol Buffer Workflow
+
+## Protocol Buffer Files
+- Definition file: [pb/flights.proto](mdc:fast_flights/pb/flights.proto)
+- Generated Python: [pb/flights_pb2.py](mdc:fast_flights/pb/flights_pb2.py)
+- Type stubs: [pb/flights_pb2.pyi](mdc:fast_flights/pb/flights_pb2.pyi)
+
+## Development Workflow
+1. Edit the `.proto` file to add/modify message definitions
+2. Regenerate Python code using protobuf compiler
+3. Update corresponding dataclasses in [model.py](mdc:fast_flights/model.py)
+4. Implement `.pb()` conversion methods in [querying.py](mdc:fast_flights/querying.py)
+
+## Key Protobuf Messages
+- `Info` - Main query container
+- `FlightData` - Individual flight request
+- `Airport` - Airport information
+- `Passenger` - Passenger type enumeration
+- `Seat` - Seat class enumeration  
+- `Trip` - Trip type enumeration
+
+## Conversion Patterns
+```python
+# Convert dataclass to protobuf
+def pb(self) -> FlightData:
+    return FlightData(
+        date=self.date,
+        from_airport=Airport(airport=self.from_airport),
+        to_airport=Airport(airport=self.to_airport)
+    )
+
+# Serialize to bytes
+def to_bytes(self) -> bytes:
+    return self.pb().SerializeToString()
+
+# Base64 encode for URL
+def to_str(self) -> str:
+    return b64encode(self.to_bytes()).decode("utf-8")
+```
+
+## Google Flights Integration
+- The base64-encoded protobuf becomes the `tfs` URL parameter
+- URL format: `https://www.google.com/travel/flights/search?tfs={base64_data}&hl={language}&curr={currency}`
+- Always include language (`hl`) and currency (`curr`) parameters

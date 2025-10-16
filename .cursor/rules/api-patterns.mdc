@@ -1,0 +1,52 @@
+---
+globs: *.py
+---
+
+# Fast Flights API Patterns
+
+## Query Building
+Always use the structured query API from [querying.py](mdc:fast_flights/querying.py):
+
+```python
+from fast_flights import FlightQuery, Passengers, create_query, get_flights
+
+# Preferred: Structured queries
+query = create_query(
+    flights=[
+        FlightQuery(
+            date="2025-12-22",
+            from_airport="TPE", 
+            to_airport="MYJ"
+        )
+    ],
+    seat="economy",
+    trip="one-way", 
+    passengers=Passengers(adults=1),
+    language="en-US"
+)
+result = get_flights(query)
+```
+
+## Data Models
+Use dataclasses from [model.py](mdc:fast_flights/model.py) for type safety:
+- `FlightQuery` - Individual flight requests
+- `Passengers` - Passenger configuration  
+- `Query` - Complete search query
+- `Airport`, `Airline`, `Alliance` - Reference data
+- `Flights`, `SingleFlight` - Response data
+
+## Protocol Buffers
+- Protocol buffer definitions are in [pb/flights.proto](mdc:fast_flights/pb/flights.proto)
+- Generated Python code is in [pb/flights_pb2.py](mdc:fast_flights/pb/flights_pb2.py)
+- Always use `.pb()` methods to convert to protobuf format
+- Base64 encode for Google Flights URL parameters
+
+## Integrations
+- Base integration class is in [integrations/base.py](mdc:fast_flights/integrations/base.py)
+- Implement `fetch_html()` method for custom integrations
+- BrightData integration example in [integrations/bright_data.py](mdc:fast_flights/integrations/bright_data.py)
+
+## Error Handling
+- Always handle network errors gracefully
+- Use optional parameters for non-essential data
+- Validate passenger counts (max 9 total, infants_on_lap ≤ adults)

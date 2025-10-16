@@ -1,0 +1,50 @@
+---
+globs: *.py
+---
+
+# Fast Flights Code Style
+
+## Type Annotations
+- Always use type hints for function parameters and return values
+- Use `Union[Type1, Type2]` for multiple types
+- Use `Optional[Type]` for nullable values
+- Use `Literal` types for string constants (see [types.py](mdc:fast_flights/types.py))
+
+## Dataclasses
+- Use `@dataclass` for data structures (see [model.py](mdc:fast_flights/model.py))
+- Use `Annotated` type hints for additional metadata:
+  ```python
+  duration: Annotated[int, "(minutes)"]
+  ```
+
+## Protocol Buffer Integration
+- Always implement `.pb()` methods that return protobuf objects
+- Use the generated protobuf classes from [pb/flights_pb2.py](mdc:fast_flights/pb/flights_pb2.py)
+- Convert to bytes with `.SerializeToString()`
+- Base64 encode with `b64encode().decode("utf-8")`
+
+## Import Organization
+```python
+# Standard library imports
+from base64 import b64encode
+from datetime import datetime
+
+# Third-party imports  
+from primp import Client
+import rjsonc
+
+# Local imports
+from .querying import Query
+from .model import Flight
+```
+
+## Naming Conventions
+- Use snake_case for functions and variables
+- Use PascalCase for classes and dataclasses
+- Use UPPER_CASE for constants
+- Use descriptive names: `from_airport`, `to_airport`, `max_stops`
+
+## Documentation
+- Use docstrings for all public functions and classes
+- Include type information in docstrings
+- Provide usage examples for complex APIs

@@ -1,0 +1,36 @@
+---
+alwaysApply: true
+---
+
+# Fast Flights Project Structure
+
+This is a Google Flights scraper library built with Python. The main entry points are:
+
+## Core Package Structure
+- [fast_flights/](mdc:fast_flights/) - Main package directory
+  - [__init__.py](mdc:fast_flights/__init__.py) - Main exports and public API
+  - [querying.py](mdc:fast_flights/querying.py) - Query building and data structures
+  - [fetcher.py](mdc:fast_flights/fetcher.py) - HTTP fetching logic
+  - [parser.py](mdc:fast_flights/parser.py) - HTML/JSON parsing logic
+  - [model.py](mdc:fast_flights/model.py) - Data models and dataclasses
+  - [types.py](mdc:fast_flights/types.py) - Type definitions and enums
+  - [pb/](mdc:fast_flights/pb/) - Protocol Buffer definitions and generated code
+  - [integrations/](mdc:fast_flights/integrations/) - Integration adapters (BrightData, etc.)
+
+## Legacy Code
+- [legacy/](mdc:legacy/) - Contains the old implementation for reference
+- [legacy/fast_flights/](mdc:legacy/fast_flights/) - Legacy package structure
+
+## Key Files
+- [main.py](mdc:main.py) - Example usage with old API
+- [test.py](mdc:test.py) - Example usage with new API
+- [pyproject.toml](mdc:pyproject.toml) - Project configuration and dependencies
+- [README.md](mdc:README.md) - Comprehensive documentation and API examples
+
+## Development Files
+- [docs/](mdc:docs/) - Documentation files
+- [examples/](mdc:examples/) - Usage examples
+- [scripts/](mdc:scripts/) - Utility scripts
+- [enums/](mdc:enums/) - Generated airport enums
+
+The project uses Protocol Buffers for Google Flights API communication and supports multiple integration backends.

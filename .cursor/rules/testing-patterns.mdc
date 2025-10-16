@@ -1,0 +1,56 @@
+---
+globs: test*.py,*test*.py
+---
+
+# Testing Patterns
+
+## Test File Organization
+- Use descriptive test file names: `test_parser.py`, `test_querying.py`
+- Place test files in project root or dedicated test directory
+- Follow naming convention: `test_*.py` or `*_test.py`
+
+## Example Test Structure
+```python
+from fast_flights import FlightQuery, Passengers, create_query, get_flights
+from pprint import pprint
+
+# Test query creation
+query = create_query(
+    flights=[
+        FlightQuery(
+            date="2025-12-22",
+            from_airport="TPE",
+            to_airport="MYJ"
+        )
+    ],
+    seat="economy",
+    trip="one-way",
+    passengers=Passengers(adults=1)
+)
+
+# Test API call
+result = get_flights(query)
+pprint(result)
+```
+
+## Test Data
+- Use real airport codes (TPE, MYJ, LHR, etc.)
+- Use future dates for testing
+- Test different seat types: "economy", "business", "first"
+- Test different trip types: "one-way", "round-trip", "multi-city"
+
+## Integration Testing
+- Test with different integrations (BrightData, local playwright)
+- Test error handling for network failures
+- Test with different language/currency combinations
+
+## Debugging
+- Use `pprint()` for readable output
+- Check `result.metadata` for airlines and alliances
+- Verify protobuf serialization with `.url()` method
+- Test URL generation: `print(query.url())`
+
+## Performance Testing
+- Test with multiple flight segments
+- Test with different passenger configurations
+- Monitor parsing performance for large result sets

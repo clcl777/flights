@@ -1,0 +1,59 @@
+---
+description: Guidelines for working with legacy code and migration patterns
+---
+
+# Legacy Code Migration
+
+## Legacy Structure
+The [legacy/](mdc:legacy/) directory contains the old implementation for reference:
+- [legacy/fast_flights/core.py](mdc:legacy/fast_flights/core.py) - Old core logic
+- [legacy/fast_flights/flights_impl.py](mdc:legacy/fast_flights/flights_impl.py) - Old flights implementation
+- [legacy/fast_flights/schema.py](mdc:legacy/fast_flights/schema.py) - Old data schemas
+
+## Migration Patterns
+
+### Old API (Legacy)
+```python
+from fast_flights import FlightData, Passengers, Result, get_flights
+
+result: Result = get_flights(
+    flight_data=[FlightData(date="2026-01-02", from_airport="TYO", to_airport="LHR")],
+    trip="one-way",
+    seat="economy",
+    passengers=Passengers(adults=1),
+    fetch_mode="fallback"
+)
+```
+
+### New API (Current)
+```python
+from fast_flights import FlightQuery, Passengers, create_query, get_flights
+
+query = create_query(
+    flights=[
+        FlightQuery(date="2026-01-02", from_airport="TYO", to_airport="LHR")
+    ],
+    seat="economy",
+    trip="one-way", 
+    passengers=Passengers(adults=1)
+)
+result = get_flights(query)
+```
+
+## Key Changes
+1. **Query Building**: Use `create_query()` instead of direct `get_flights()` calls
+2. **Flight Data**: Use `FlightQuery` instead of `FlightData`
+3. **Structured API**: More explicit parameter passing
+4. **Better Type Safety**: Enhanced type annotations and validation
+
+## When Working with Legacy Code
+- Reference legacy implementations for complex logic
+- Migrate patterns gradually to new architecture
+- Preserve working functionality during migration
+- Update documentation to reflect new API patterns
+- Maintain backward compatibility where possible
+
+## File References
+- Current implementation: [fast_flights/](mdc:fast_flights/)
+- Legacy reference: [legacy/fast_flights/](mdc:legacy/fast_flights/)
+- Migration examples: [main.py](mdc:main.py) vs [test.py](mdc:test.py)
