@@ -13,6 +13,7 @@ query = create_query(
     trip="one-way",
     passengers=Passengers(adults=1),
     language="zh-TW",
+    price_type="best",
 )
 res = get_flights(query)
 pprint(res)

@@ -148,3 +148,4 @@ Currency = Literal[
 
 SeatType = Literal["economy", "premium-economy", "business", "first"]
 TripType = Literal["round-trip", "one-way", "multi-city"]
+PriceType = Literal["best", "cheapest"]

@@ -3,7 +3,7 @@ from datetime import datetime as Datetime
 from dataclasses import dataclass
 from typing import Literal, Optional, Union
 
-from .types import Currency, Language, SeatType, TripType
+from .types import Currency, Language, PriceType, SeatType, TripType
 from .pb.flights_pb2 import Airport, Info, Passenger, Seat, FlightData, Trip
 
 
@@ -17,6 +17,7 @@ class Query:
     passengers: list[Passenger]
     language: str
     currency: str
+    price_type: PriceType
 
     def pb(self) -> Info:
         """(internal) Protobuf data. (`Info`)"""
@@ -40,7 +41,7 @@ class Query:
 
         This is generally used for debugging purposes.
         """
-        return (
+        url = (
             "https://www.google.com/travel/flights/search?tfs="
             + self.to_str()
             + "&hl="
@@ -49,9 +50,19 @@ class Query:
             + self.currency
         )
 
+        if self.price_type == "cheapest":
+            url += "&tfu=EgoIABAAGAAgAigD&hl"
+
+        return url
+
     def params(self) -> dict[str, str]:
         """Create `params` in dictionary form."""
-        return {"tfs": self.to_str(), "hl": self.language, "curr": self.currency}
+        params = {"tfs": self.to_str(), "hl": self.language, "curr": self.currency}
+
+        if self.price_type == "cheapest":
+            params["tfu"] = "EgoIABAAGAAgAigD&hl"
+
+        return params
 
     def __repr__(self) -> str:
         return "Query(...)"
@@ -139,6 +150,7 @@ def create_query(
     language: Union[str, Literal[""], Language] = "",
     currency: Union[str, Literal[""], Currency] = "",
     max_stops: Optional[int] = None,
+    price_type: PriceType = "best",
 ) -> Query:
     """Create a query.
 
@@ -150,6 +162,7 @@ def create_query(
         language: Set the language. Use `""` (blank str) to let Google decide.
         currency: Set the currency. Use `""` (blank str) to let Google decide.
         max_stops (optional): Set the maximum stops for every flight query, if present.
+        price_type (optional): Price sorting type. "best" or "cheapest".
     """
     return Query(
         flight_data=[flight._setmaxstops(max_stops).pb() for flight in flights],
@@ -158,4 +171,5 @@ def create_query(
         passengers=passengers.pb(),
         language=language,
         currency=currency,
+        price_type=price_type,
     )
