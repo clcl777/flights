@@ -1,14 +1,20 @@
 """
-Example: Multi-city flight search
-複数都市周遊便の検索例
+Example: Multi-city flight search (2-leg round-trip)
+複数都市周遊便の検索例（2区間の往復型）
 
-⚠️ Note: Multi-city parsing is not yet fully implemented in the current parser.
-The query URL is generated correctly, but parsing the results may fail.
-This is a work in progress feature.
+✅ Supported: All multi-city queries (2+ legs)
+   - 2-leg: Uses initial HTML response (this example)
+   - 3+ legs: Automatically uses GetShoppingResults API (see example_3leg_multi_city.py)
 
-注意: 現在のパーサーでは複数都市周遊便の解析が未実装です。
-クエリURLは正しく生成されますが、結果の解析に失敗する可能性があります。
-この機能は開発中です。
+対応状況:
+✅ すべてのmulti-cityクエリに対応（2区間以上）
+   - 2区間: 初期HTMLレスポンスを使用（この例）
+   - 3区間以上: 自動的にGetShoppingResults APIを使用（example_3leg_multi_city.pyを参照）
+
+Note: For simple round-trips (A→B→A), use trip="round-trip" instead.
+      multi-city is useful when you need different dates or flexibility.
+注意: 単純な往復便（A→B→A）の場合は trip="round-trip" を使用してください。
+      multi-cityは異なる日付や柔軟性が必要な場合に便利です。
 """
 
 from pprint import pprint

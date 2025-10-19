@@ -417,6 +417,142 @@ ANA - ¥11,219
 
 ---
 
+# Multi-city（複数都市周遊便）のサポート状況
+
+## 概要
+Multi-cityクエリのサポート状況を調査し、技術的な制限を明確にしました。
+
+## サポート状況
+
+### ✅ 2区間のmulti-city（往復型）
+- **例**: HND → KIX → HND
+- **状態**: 完全サポート
+- **動作**: 初期HTMLレスポンスにフライトデータが含まれる
+- **実装**: 既存の`fetch_flights_html()`で取得可能
+
+### ✅ 3区間以上のmulti-city
+- **例**: HND → ICN → FUK → HND  
+- **状態**: 完全サポート（GetShoppingResults API経由）
+- **実装**: 自動的にAPIコールを使用してフライトデータを取得
+
+## 技術的な詳細
+
+### データソースの違い
+
+#### 2区間のmulti-city
+- 初期HTMLレスポンスの`script.ds\:1`タグに直接フライトデータが含まれる
+- 従来の`fetch_flights_html()`でデータ取得可能
+
+#### 3区間以上のmulti-city ✅ 実装済み
+- 初期HTMLにはフライトデータが**含まれない**
+- JavaScriptが`GetShoppingResults` APIエンドポイントを**動的に**呼び出してデータを取得
+- APIエンドポイント: `https://www.google.com/_/FlightsFrontendUi/data/travel.frontend.flights.FlightsFrontendService/GetShoppingResults`
+- このAPIは複雑なリクエストボディと特殊なヘッダー（`x-same-domain`, `x-goog-ext-259736195-jspb`など）を必要とする
+
+### 実装方法
+3区間以上のmulti-cityクエリを検出すると、自動的にGetShoppingResults APIを直接呼び出します：
+
+1. **リクエストボディの生成** (`_build_api_request_body`)
+   - クエリデータ（フライト情報、座席クラス、乗客数）をJSON配列に変換
+   - URL-encoded形式で`f.req`パラメータとして送信
+
+2. **APIコール** (`fetch_flights_via_api`)
+   - POSTリクエストでAPIエンドポイントを呼び出し
+   - 必要なヘッダー（`x-same-domain`, `x-goog-ext-259736195-jspb`）を設定
+   - browser impersonation (`primp`)を使用して実際のブラウザのように動作
+
+3. **レスポンスのパース**
+   - XSS保護プレフィックス `)]}'` を除去
+   - JSON配列から内部のフライトデータを抽出
+   - HTMLライクな構造に変換して既存のパーサーと互換性を保つ
+
+4. **自動切り替え**
+   ```python
+   if isinstance(q, Query) and q.trip == 3 and len(q.flight_data) >= 3:
+       return fetch_flights_via_api(q, proxy=proxy)
+   ```
+
+## パーサーの変更
+`fast_flights/parser.py`の`parse_js`関数を更新し、`data[3]`が`None`の場合に適切なエラーメッセージを表示するようにしました：
+
+```python
+# Check if flight data exists
+if data[3] is None:
+    raise ValueError(
+        "No flight data found in response. "
+        "This may occur with: "
+        "(1) Multi-city queries with 3+ legs (currently unsupported), "
+        "(2) No available flights for the requested route/dates, "
+        "(3) Invalid query parameters. "
+        "Note: Multi-city queries with 2 legs are supported."
+    )
+```
+
+## サンプルコード
+
+### 2区間のmulti-city（動作する）
+```python
+from fast_flights import create_query, FlightQuery, Passengers, get_flights
+
+query = create_query(
+    flights=[
+        FlightQuery(date="2025-12-25", from_airport="HND", to_airport="KIX"),
+        FlightQuery(date="2025-12-28", from_airport="KIX", to_airport="HND"),
+    ],
+    seat="economy",
+    trip="multi-city",
+    passengers=Passengers(adults=1),
+    language="en-US",
+    price_type="cheapest",
+)
+
+flights = get_flights(query)  # ✓ 動作する
+```
+
+### 3区間のmulti-city（動作する）
+```python
+query = create_query(
+    flights=[
+        FlightQuery(date="2025-12-25", from_airport="HND", to_airport="ICN"),
+        FlightQuery(date="2026-01-01", from_airport="ICN", to_airport="FUK"),
+        FlightQuery(date="2026-02-18", from_airport="FUK", to_airport="HND"),
+    ],
+    seat="economy",
+    trip="multi-city",
+    passengers=Passengers(adults=1),
+    language="en-US",
+    price_type="cheapest",
+)
+
+flights = get_flights(query)  # ✓ 動作する（APIコールを自動使用）
+# 結果: 8件のフライトオプションが見つかりました
+```
+
+## 関連ファイル
+- `fast_flights/fetcher.py` - API呼び出し実装
+- `fast_flights/parser.py` - パーサーの更新  
+- `example_multi_city.py` - 2区間のサンプルコード
+- `example_3leg_multi_city.py` - 3区間のサンプルコード（APIデモ）
+- `test_multi_city.py` - 2区間のテストコード
+
+## 新機能の詳細
+
+### APIコールの流れ
+1. ユーザーが3区間以上のmulti-cityクエリを作成
+2. `fetch_flights_html()`が自動的に`fetch_flights_via_api()`を呼び出し
+3. APIリクエストボディを構築（クエリデータ→JSON配列→URL-encoded）
+4. POSTリクエストでGetShoppingResults APIを呼び出し
+5. レスポンスをパースしてHTMLライクな構造に変換
+6. 既存のパーサー（`parse_js`）でフライトデータを抽出
+
+### 利点
+- **透過的**: ユーザーコードの変更不要
+- **自動切り替え**: 2区間はHTML、3区間以上はAPI
+- **互換性**: 既存のパーサーとの完全互換
+- **高速**: Playwrightを使わずに直接APIコール
+
+---
+
 ## 関連ファイル
 - `fast_flights/pb/flights.proto` - Protocol Buffer定義
 - `fast_flights/querying.py` - クエリ生成ロジック
