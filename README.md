@@ -85,6 +85,37 @@ Airport.TAIPEI
               ╰─────────────────────────────────╯
 ```
 
+## Booking URL API
+
+Get pricing information from Google Flights booking URLs:
+
+```python
+from fast_flights import get_booking_info
+
+# Google Flights booking URL
+booking_url = "https://www.google.com/travel/flights/booking?tfs=..."
+
+# Define flight segments
+segments = [
+    {"from": "HND", "to": "ICN", "date": "2025-12-25", "airline": "OZ", "flight_number": "177"},
+    {"from": "ICN", "to": "FUK", "date": "2026-01-01", "airline": "OZ", "flight_number": "134"},
+    {"from": "FUK", "to": "HND", "date": "2026-02-18", "airline": "JL", "flight_number": "300"},
+]
+
+# Get booking information
+info = get_booking_info(booking_url, segments=segments)
+
+print(f"Total: {info.currency} {info.total_price:,}")
+# Total: JPY 131,919
+
+for provider in info.booking_providers:
+    print(f"{provider.name}: {provider.currency} {provider.price:,}")
+# Booking.com: JPY 131,919
+# Gotogate: JPY 134,909
+```
+
+See [BOOKING_API_README.md](BOOKING_API_README.md) for detailed documentation.
+
 ## What's new
 - `v2.0` – New (much more succinct) API, fallback support for Playwright serverless functions, and [documentation](https://aweirddev.github.io/flights)!
 - `v2.2` - Now supports **local playwright** for sending requests.
