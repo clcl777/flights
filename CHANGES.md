@@ -308,9 +308,120 @@ price_type="cheapest",  # ← カンマを追加
 
 ---
 
+---
+
+## 便コード（フライトナンバー）の取得機能を追加
+
+### 変更ファイル
+
+#### 1. `fast_flights/model.py`
+
+`SingleFlight`データクラスに`flight_number`フィールドを追加しました。
+
+```python
+@dataclass
+class SingleFlight:
+    from_airport: Airport
+    to_airport: Airport
+    departure: SimpleDatetime
+    arrival: SimpleDatetime
+    duration: Annotated[int, "(minutes)"]
+    plane_type: str
+    flight_number: str  # Format: "AA123" (airline code + flight number)
+```
+
+**フォーマット:** `[航空会社コード][便番号]`
+- 例: `7G23`, `JL221`, `NH3821`
+
+#### 2. `fast_flights/parser.py`
+
+パーサーに便コード取得ロジックを追加しました。
+
+```python
+# Flight number: single_flight[22] = [airline_code, flight_num, None, airline_name]
+flight_info = single_flight[22]
+flight_number = f"{flight_info[0]}{flight_info[1]}" if flight_info else ""
+
+sg_flights.append(
+    SingleFlight(
+        from_airport=from_airport,
+        to_airport=to_airport,
+        departure=departure,
+        arrival=arrival,
+        duration=duration,
+        plane_type=plane_type,
+        flight_number=flight_number,  # ← 追加
+    )
+)
+```
+
+### データ構造
+
+Google Flightsのデータでは、`single_flight[22]`に便コード情報が配列形式で格納されています：
+
+```python
+['7G', '23', None, 'Star Flyer']
+# ↓
+# [0]: 航空会社コード
+# [1]: 便番号
+# [2]: None（未使用）
+# [3]: 航空会社名
+```
+
+### 使用例
+
+```python
+from fast_flights import create_query, get_flights, FlightQuery, Passengers
+
+query = create_query(
+    flights=[FlightQuery(date="2025-12-19", from_airport="HND", to_airport="KIX")],
+    seat="economy",
+    trip="one-way",
+    passengers=Passengers(adults=1),
+    language="en-US",
+)
+
+flights = get_flights(query)
+
+for flight in flights[:3]:
+    print(f"{', '.join(flight.airlines)} - ¥{flight.price:,}")
+    for segment in flight.flights:
+        print(f"  Flight {segment.flight_number}: {segment.from_airport.code} → {segment.to_airport.code}")
+        print(f"    Departure: {segment.departure.time}")
+        print(f"    Aircraft: {segment.plane_type}")
+```
+
+### 実行結果（例）
+
+```
+Star Flyer - ¥10,610
+  Flight 7G23: HND → KIX
+    Departure: [12]
+    Aircraft: Airbus A320
+
+JAL - ¥11,219
+  Flight JL221: HND → KIX
+    Departure: [7]
+    Aircraft: Boeing 737
+
+ANA - ¥11,219
+  Flight NH3821: HND → KIX
+    Departure: [8, 45]
+    Aircraft: Airbus A320
+```
+
+### 変更による影響
+
+この変更により、既存のコードで`SingleFlight`を生成する際に`flight_number`パラメータが必須になります。
+パーサー以外で`SingleFlight`を直接インスタンス化している場合は、`flight_number`を追加する必要があります。
+
+---
+
 ## 関連ファイル
 - `fast_flights/pb/flights.proto` - Protocol Buffer定義
 - `fast_flights/querying.py` - クエリ生成ロジック
+- `fast_flights/model.py` - データモデル
+- `fast_flights/parser.py` - HTMLパーサー
 - `example_cheapest.py` - 使用例
 - `CHANGES.md` - 変更履歴（このファイル）
 

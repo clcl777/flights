@@ -1,16 +1,7 @@
 import rjsonc
 from selectolax.lexbor import LexborHTMLParser
 
-from .model import (
-    Airline,
-    Airport,
-    Alliance,
-    CarbonEmission,
-    Flights,
-    SingleFlight,
-    JsMetadata,
-    SimpleDatetime,
-)
+from .model import Airline, Airport, Alliance, CarbonEmission, Flights, JsMetadata, SimpleDatetime, SingleFlight
 
 
 class MetaList(list):
@@ -72,6 +63,10 @@ def parse_js(js: str):
 
             duration = single_flight[11]
 
+            # Flight number: single_flight[22] = [airline_code, flight_num, None, airline_name]
+            flight_info = single_flight[22]
+            flight_number = f"{flight_info[0]}{flight_info[1]}" if flight_info else ""
+
             sg_flights.append(
                 SingleFlight(
                     from_airport=from_airport,
@@ -80,6 +75,7 @@ def parse_js(js: str):
                     arrival=arrival,
                     duration=duration,
                     plane_type=plane_type,
+                    flight_number=flight_number,
                 )
             )
 
@@ -94,9 +90,7 @@ def parse_js(js: str):
                 price=price,
                 airlines=airlines,
                 flights=sg_flights,
-                carbon=CarbonEmission(
-                    typical_on_route=typical_carbon_emission, emission=carbon_emission
-                ),
+                carbon=CarbonEmission(typical_on_route=typical_carbon_emission, emission=carbon_emission),
             )
         )
 
